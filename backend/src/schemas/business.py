@@ -28,3 +28,4 @@ class PlanInput(BaseModel):
 class TraceInput(BaseModel):
  name:str=Field(min_length=2,max_length=120)
  plan_id:int
+ request_id:str|None=Field(default=None,min_length=1,max_length=120)

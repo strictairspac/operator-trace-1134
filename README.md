@@ -40,6 +40,9 @@ seed三账号、三个数据集（240行日班、空数据、重复右键）、�
 
 DSL最多6步，首步仅scan readings；filter eq/gte/lte；hash_join仅readings.sensor_id=sensors.sensor_id且最多一次；group仅value的count/sum/avg。禁止eval、任意代码和任意SQL。最多100传感器、2000采样、10000连接输出行；超限失败，不保存部分结果。JSON非法、字段错误、非法算子、孤立引用、重复名有可恢复错误。任务使用Redis简单单消费者，进程崩溃后的running任务不自动重试，保留供人工复查后新建任务。
 
+## 共享输入快照与存档容量
+同一数据集的相同输入只保存一份共享快照：内容按源表行序规范化后取SHA-256，行序和重复行都参与身份，因此顺序不同或重复倍数不同就是不同快照。执行受理时固定当时的输入，之后源表被修改也不影响旧剖面；剖面页与导出会还原那次执行的完整输入。共享快照按数据集计容量，每个数据集上限1 MiB（`SNAPSHOT_LIMIT_BYTES`）。满额时仍受理可共用已有快照的执行，新输入超出容量返回413且不落部分存档。剖面页可移除已结束（completed/failed）的存档；仍被其它执行引用的共享快照保留，末份引用移除后才释放容量。受理与移除对数据集行加锁，引用计数和容量一致；请求带`request_id`（页面自动生成）时重试同一请求返回原执行，不重复创建也不重复占用额度。本功能前产生的执行保留逐份内联快照（`snapshot_id`为空），照常查看、导出和移除。
+
 ## 技术、目录与本地开发
 Python3.11 / FastAPI / SQLAlchemy / psycopg / Redis / PostgreSQL16；原生 HTML/CSS/JS ES modules / nginx1.27。五服务frontend/backend/worker/db/redis均健康探针，命名卷数据库/Redis/共享产物。DB/Redis健康后启动backend，backend健康后启worker/frontend。
 

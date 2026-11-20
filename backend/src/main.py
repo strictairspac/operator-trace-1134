@@ -9,6 +9,9 @@ from src.middlewares.errors import install_errors
 from src.middlewares.requests import RequestTrace
 @asynccontextmanager
 async def lifespan(app):
+ from src.config.schema import ensure_schema
+ try:ensure_schema()
+ except Exception:logging.exception('schema ensure failed')
  if os.getenv('SEED_DEMO','true').lower()=='true':
   try:
    from scripts.seed_demo import seed
